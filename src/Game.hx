@@ -1,3 +1,4 @@
+import en.Player;
 import dn.Process;
 import hxd.Key;
 
@@ -11,7 +12,13 @@ class Game extends Process {
 	public var level : Level;
 	public var hud : ui.Hud;
 
-	public function new() {
+	public var goals:Array<en.Goal>;
+	public var blocks:Array<en.Block>;
+	public var player:en.Player;
+
+	public var tickLength = 1;
+
+	public function new(number:Int) {
 		super(Main.ME);
 		ME = this;
 		ca = Main.ME.controller.createAccess("game");
@@ -23,15 +30,23 @@ class Game extends Process {
 		root.add(scroller, Const.DP_BG);
 		scroller.filter = new h2d.filter.ColorMatrix(); // force rendering for pixel perfect
 
+		goals = new Array<en.Goal>();
+		blocks = new Array<en.Block>();
+		
+
 		camera = new Camera();
-		level = new Level();
+		level = new Level(number);
 		fx = new Fx();
 		hud = new ui.Hud();
 
 		Process.resizeAll();
-		trace(Lang.t._("Game is ready."));
+		cd.setS("tick", tickLength);
 	}
 
+
+	public function createPlayer(x, y) {
+		player = new Player(x,y);
+	}
 	public function onCdbReload() {
 	}
 
@@ -83,6 +98,12 @@ class Game extends Process {
 
 		for(e in Entity.ALL) if( !e.destroyed ) e.update();
 
+		if(!cd.has("tick")) {
+			for(block in blocks) {
+				block.tick();
+			}
+			cd.setS("tick", tickLength);
+		}
 		if( !ui.Console.ME.isActive() && !ui.Modal.hasAny() ) {
 			#if hl
 			// Exit

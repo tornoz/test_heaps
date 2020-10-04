@@ -1,3 +1,5 @@
+import uuid.Uuid;
+
 class Entity {
     public static var ALL : Array<Entity> = [];
     public static var GC : Array<Entity> = [];
@@ -15,8 +17,8 @@ class Entity {
 	public var uid : Int;
     public var cx = 0;
     public var cy = 0;
-    public var xr = 0.5;
-    public var yr = 1.0;
+    public var xr = 0.;
+    public var yr = 0.;
 
     public var dx = 0.;
     public var dy = 0.;
@@ -33,6 +35,14 @@ class Entity {
 	public var sprScaleX = 1.0;
 	public var sprScaleY = 1.0;
 	public var entityVisible = true;
+
+	public var width = 1;
+	public var height = 1;
+
+	public var uuid:String;
+
+	public var isFrict = true;
+
 
     public var spr : HSprite;
 	public var colorAdd : h3d.Vector;
@@ -52,12 +62,13 @@ class Entity {
         ALL.push(this);
 
 		cd = new dn.Cooldown(Const.FPS);
-        setPosCase(x,y);
+		setPosCase(x,y);
 
-        spr = new HSprite(Assets.tiles);
-        Game.ME.scroller.add(spr, Const.DP_MAIN);
-		spr.colorAdd = colorAdd = new h3d.Vector();
-		spr.setCenterRatio(0.5,1);
+        spr = new HSprite();
+		Game.ME.scroller.add(spr, Const.DP_MAIN);
+		uuid = Uuid.v4();
+		// spr.colorAdd = colorAdd = new h3d.Vector();
+		// spr.setCenterRatio(0.5,1);
     }
 
 	inline function set_dir(v) {
@@ -75,8 +86,6 @@ class Entity {
 	public function setPosCase(x:Int, y:Int) {
 		cx = x;
 		cy = y;
-		xr = 0.5;
-		yr = 1;
 	}
 
 	public function setPosPixel(x:Float, y:Float) {
@@ -229,37 +238,93 @@ class Entity {
 
     public function update() { // runs at an unknown fps
 		// X
-		var steps = M.ceil( M.fabs(dxTotal*tmod) );
-		var step = dxTotal*tmod / steps;
-		while( steps>0 ) {
-			xr+=step;
-
-			// [ add X collisions checks here ]
-
-			while( xr>1 ) { xr--; cx++; }
-			while( xr<0 ) { xr++; cx--; }
-			steps--;
-		}
-		dx*=Math.pow(frict,tmod);
-		bdx*=Math.pow(bumpFrict,tmod);
-		if( M.fabs(dx)<=0.0005*tmod ) dx = 0;
-		if( M.fabs(bdx)<=0.0005*tmod ) bdx = 0;
+		xr+=dx;
+		if(isFrict)
+			dx*=Math.pow(frict,tmod);
 
 		// Y
-		var steps = M.ceil( M.fabs(dyTotal*tmod) );
-		var step = dyTotal*tmod / steps;
-		while( steps>0 ) {
-			yr+=step;
+		yr+=dy;
+		if(isFrict)
+			dy*=Math.pow(frict,tmod);
 
-			// [ add Y collisions checks here ]
+		collideWithLevel();
 
-			while( yr>1 ) { yr--; cy++; }
-			while( yr<0 ) { yr++; cy--; }
-			steps--;
+		if((dx > 0 && dx < 0.00005)
+			|| dx < 0 && dx > -0.00005)
+			dx = 0;
+		if((dy > 0 && dy < 0.00005)
+			|| dy < 0 && dy > -0.00005)
+			dy = 0;
+
+
+
+		
+	}
+	
+	public function overlap(footX, footY, e:Entity) {
+		var collide = (
+			e.footX+e.hei >= footX 
+			&& e.footY + e.hei >= footY 
+			&& footX + hei >= e.footX 
+			&& footY+hei >= e.footY);
+			return collide;
+		
+	}
+
+	public function collideWithEntity(e:Entity) {
+		if(overlap(footX+dx*2*Const.GRID,footY, e)) {
+			dx = 0;
 		}
-		dy*=Math.pow(frict,tmod);
-		bdy*=Math.pow(bumpFrict,tmod);
-		if( M.fabs(dy)<=0.0005*tmod ) dy = 0;
-		if( M.fabs(bdy)<=0.0005*tmod ) bdy = 0;
-    }
+
+		if(overlap(footX-dx*2*Const.GRID,cy, e) ) {
+			dx = 0;
+		}
+
+		if(overlap(footX, footY+dy*2*Const.GRID, e)) {
+			dy = 0;
+		}
+
+		if( yr<=0 && overlap(footX, footY-dy*2*Const.GRID, e)) {
+			dy = 0;
+		}
+	}
+
+	public function collideWithLevel() {
+
+		if( xr>=1 && (
+			level.hasCollision(cx+1+width,cy+width)
+			|| level.hasCollision(cx+1,cy)
+			|| level.hasCollision(cx+1,cy+width)
+			|| level.hasCollision(cx+1+width,cy) )) {
+			xr = 1;
+			dx = 0;
+		}
+
+		if( xr<=0 && (
+			level.hasCollision(cx-1,cy)
+			|| level.hasCollision(cx-1,cy+width) )) {
+			xr = 0;
+			dx = 0;
+		}
+
+		while( xr>1 ) { xr--; cx++; }
+		while( xr<0 ) { xr++; cx--; }
+			
+		if( yr>=1 && (level.hasCollision(cx+width,cy+1+width) 
+			|| level.hasCollision(cx,cy+1+width)
+			|| level.hasCollision(cx+width,cy+1) 
+			|| level.hasCollision(cx,cy+1)
+			)) {
+			yr = 1;
+			dy = 0;
+		}
+
+		if( yr<=0 && (level.hasCollision(cx,cy-1) 
+			|| level.hasCollision(cx+width,cy-1))) {
+			yr = 0;
+			dy = 0;
+		}
+		while( yr>1 ) { yr--; cy++; }
+		while( yr<0 ) { yr++; cy--; }
+	}
 }

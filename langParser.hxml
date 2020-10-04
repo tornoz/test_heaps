@@ -2,6 +2,7 @@
 -main LangParser
 -lib castle
 -lib deepnightLibs
+-lib led-haxe-api
 -D potools
 -hl bin/langParser.hl
 

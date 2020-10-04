@@ -2,5 +2,7 @@
 -lib castle
 -lib heaps
 -lib deepnightLibs
+-lib led-haxe-api
+-lib uuid
 -main Boot
 -dce full

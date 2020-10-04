@@ -1,3 +1,4 @@
+import dn.Process;
 import Data;
 import hxd.Key;
 
@@ -6,6 +7,8 @@ class Main extends dn.Process {
 	public var controller : dn.heaps.Controller;
 	public var ca : dn.heaps.Controller.ControllerAccess;
 
+	var level = 0;
+	var gameStarted = false;
 	public function new(s:h2d.Scene) {
 		super();
 		ME = this;
@@ -60,17 +63,18 @@ class Main extends dn.Process {
 		// Start
 		new dn.heaps.GameFocusHelper(Boot.ME.s2d, Assets.fontMedium);
 		delayer.addF( startGame, 1 );
+		cd.setS("wait", 2);
 	}
 
 	public function startGame() {
 		if( Game.ME!=null ) {
 			Game.ME.destroy();
 			delayer.addF(function() {
-				new Game();
+				new Game(level);
 			}, 1);
 		}
 		else
-			new Game();
+			new Game(level);
 	}
 
 	override public function onResize() {
@@ -87,6 +91,24 @@ class Main extends dn.Process {
 
     override function update() {
 		Assets.tiles.tmod = tmod;
-        super.update();
+		super.update();
+
+		if(!cd.has("wait")) {
+			var win = 0;
+			for( block in Game.ME.blocks) {
+				if(block.distPx(block.goal) < 32) {
+					win = win +1;
+				}
+			}
+			if(win == Game.ME.blocks.length) {
+				level++;
+	
+				Game.ME.destroy();
+				cd.setS("wait", 2);
+				delayer.addF(function() {
+					new Game(level);
+				}, 1);
+			}
+		}
     }
 }

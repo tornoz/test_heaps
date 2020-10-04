@@ -14,7 +14,7 @@ class Hud extends dn.Process {
 		createRootInLayers(game.root, Const.DP_UI);
 		root.filter = new h2d.filter.ColorMatrix(); // force pixel perfect rendering
 
-		flow = new h2d.Flow(root);
+		// flow = new h2d.Flow(root);
 	}
 
 	override function onResize() {
